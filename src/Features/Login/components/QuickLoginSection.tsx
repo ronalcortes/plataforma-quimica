@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 
 const QuickLoginSection = () => {
   return (
@@ -10,11 +11,11 @@ const QuickLoginSection = () => {
         <div className='bg-gray-100 rounded-lg p-4 w-36 relative'>
           <div className='flex flex-col items-center'>
             <div className='mb-2'>
-              <img
+              <Image
                 src='/placeholder.svg'
                 alt='john doe'
-                width='60'
-                height='60'
+                width={60}
+                height={60}
                 className='rounded-full'
               />
             </div>
