@@ -9,18 +9,42 @@ import {
 } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { useSessionStorage } from './useSessionStorage';
+import { useUserManagement, UserProfile } from './useUserManagement';
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const { clearSessionData, updateLastLogin, saveSessionData } =
-    useSessionStorage();
+  const {
+    clearSessionData,
+    updateLastLogin,
+    saveSessionData,
+    updateSessionWithProfile,
+  } = useSessionStorage();
+  const { getUserProfileByEmail } = useUserManagement();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         // Usuario autenticado, actualizar último login
         updateLastLogin();
+
+        // Obtener perfil del usuario por email y actualizar sesión
+        try {
+          const profileResult = await getUserProfileByEmail(user.email || '');
+          if (!profileResult.error && profileResult.data) {
+            const profile = profileResult.data as unknown as UserProfile;
+            // Verificar que el perfil tiene las propiedades necesarias
+            if (profile.firstName && profile.lastName && profile.role) {
+              updateSessionWithProfile({
+                firstName: profile.firstName,
+                lastName: profile.lastName,
+                role: profile.role,
+              });
+            }
+          }
+        } catch (error) {
+          console.error('Error al cargar perfil del usuario:', error);
+        }
       } else {
         // Usuario no autenticado, limpiar datos de sesión
         clearSessionData();
@@ -30,7 +54,7 @@ export const useAuth = () => {
     });
 
     return () => unsubscribe();
-  }, [clearSessionData, updateLastLogin]);
+  }, []); // Remover las dependencias problemáticas
 
   const signIn = async (
     email: string,
@@ -38,11 +62,48 @@ export const useAuth = () => {
     rememberMe: boolean = false
   ) => {
     try {
+      console.log('🔐 Iniciando proceso de login...');
       const result = await signInWithEmailAndPassword(auth, email, password);
+      console.log('✅ Login exitoso en Firebase Auth');
+
+      // Obtener perfil del usuario por email
+      console.log('📋 Obteniendo perfil del usuario por email...');
+      const profileResult = await getUserProfileByEmail(email);
+      console.log('📋 Resultado del perfil:', profileResult);
+
+      let userProfile = undefined;
+
+      if (!profileResult.error && profileResult.data) {
+        const profile = profileResult.data as unknown as UserProfile;
+        console.log('👤 Perfil obtenido:', profile);
+
+        // Verificar que el perfil tiene las propiedades necesarias
+        if (profile.firstName && profile.lastName && profile.role) {
+          userProfile = {
+            firstName: profile.firstName,
+            lastName: profile.lastName,
+            role: profile.role,
+          };
+          console.log('✅ Perfil de usuario válido:', userProfile);
+        } else {
+          console.warn('⚠️ Perfil incompleto:', {
+            firstName: profile.firstName,
+            lastName: profile.lastName,
+            role: profile.role,
+          });
+        }
+      } else {
+        console.error('❌ Error al obtener perfil:', profileResult.error);
+      }
+
       // Guardar datos de sesión después del login exitoso
-      saveSessionData(result.user, rememberMe);
+      console.log('💾 Guardando datos de sesión con perfil:', userProfile);
+      saveSessionData(result.user, rememberMe, userProfile);
+      console.log('✅ Datos de sesión guardados');
+
       return { user: result.user, error: null };
     } catch (error: unknown) {
+      console.error('❌ Error en signIn:', error);
       const errorMessage =
         error instanceof Error
           ? error.message

@@ -4,17 +4,16 @@ import React, { useState } from 'react';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useSessionStorage } from '../../hooks/useSessionStorage';
+import { useUserProfile } from '../../hooks/useUserProfile';
 import {
   Bars3Icon,
   XMarkIcon,
-  HomeIcon,
-  ChartBarIcon,
-  CogIcon,
   UserIcon,
   PuzzlePieceIcon,
   BellIcon,
   MagnifyingGlassIcon,
   ArrowRightIcon,
+  AcademicCapIcon,
 } from '@heroicons/react/24/outline';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -26,6 +25,10 @@ interface ProtectedLayoutProps {
 const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) => {
   const { user, logout, loading } = useAuthContext();
   const { sessionData } = useSessionStorage();
+  const { isProfesor: isProfesorFromProfile } = useUserProfile();
+
+  // Usar el role desde sessionData como respaldo si no está disponible desde eFeal perfil
+  const isProfesor = isProfesorFromProfile || sessionData?.role === 'PROFESOR';
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -62,6 +65,15 @@ const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) => {
 
   const navigation = [
     { name: 'Mis Juegos', href: '/games', icon: PuzzlePieceIcon },
+    ...(isProfesor
+      ? [
+          {
+            name: 'Gestión de Juegos',
+            href: '/profesorgames',
+            icon: AcademicCapIcon,
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -96,6 +108,7 @@ const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) => {
             <button
               onClick={() => setSidebarOpen(false)}
               className='text-gray-400 hover:text-gray-600'
+              title='Cerrar menú'
             >
               <XMarkIcon className='h-6 w-6' />
             </button>
@@ -200,6 +213,7 @@ const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) => {
               <button
                 onClick={() => setSidebarOpen(true)}
                 className='lg:hidden -ml-0.5 -mt-0.5 h-12 w-12 inline-flex items-center justify-center rounded-md text-gray-500 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500'
+                title='Abrir menú'
               >
                 <Bars3Icon className='h-6 w-6' />
               </button>
@@ -215,7 +229,10 @@ const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) => {
               </div>
             </div>
             <div className='flex items-center space-x-4'>
-              <button className='text-gray-400 hover:text-gray-600 relative'>
+              <button
+                className='text-gray-400 hover:text-gray-600 relative'
+                title='Notificaciones'
+              >
                 <BellIcon className='h-6 w-6' />
                 <span className='absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full'></span>
               </button>

@@ -88,6 +88,32 @@ const SessionInfo = () => {
             <p>
               <strong>Sesión válida:</strong> {isSessionValid() ? 'Sí' : 'No'}
             </p>
+            {/* Información del perfil del usuario */}
+            {(sessionData.firstName ||
+              sessionData.lastName ||
+              sessionData.role) && (
+              <>
+                <hr className='my-2 border-blue-200' />
+                <p className='font-medium text-blue-700 mb-1'>
+                  Perfil del Usuario:
+                </p>
+                {sessionData.firstName && (
+                  <p>
+                    <strong>Nombre:</strong> {sessionData.firstName}
+                  </p>
+                )}
+                {sessionData.lastName && (
+                  <p>
+                    <strong>Apellido:</strong> {sessionData.lastName}
+                  </p>
+                )}
+                {sessionData.role && (
+                  <p>
+                    <strong>Rol:</strong> {sessionData.role}
+                  </p>
+                )}
+              </>
+            )}
           </div>
         </div>
       )}

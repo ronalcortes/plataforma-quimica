@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { User } from 'firebase/auth';
 
 interface SessionData {
@@ -8,6 +8,10 @@ interface SessionData {
   photoURL: string | null;
   lastLogin: string;
   rememberMe: boolean;
+  // Datos del perfil del usuario
+  firstName?: string;
+  lastName?: string;
+  role?: 'ESTUDIANTE' | 'PROFESOR' | 'ADMINISTRADOR';
 }
 
 export const useSessionStorage = () => {
@@ -19,11 +23,13 @@ export const useSessionStorage = () => {
   }, []);
 
   const loadSessionData = () => {
+    console.log('🔄 Cargando datos de sesión...');
     try {
       // Primero intentar cargar desde localStorage (recordarme = true)
       const localData = localStorage.getItem('userSession');
       if (localData) {
         const parsedData = JSON.parse(localData);
+        console.log('✅ Datos cargados desde localStorage:', parsedData);
         setSessionData(parsedData);
         return;
       }
@@ -32,16 +38,33 @@ export const useSessionStorage = () => {
       const sessionStorageData = sessionStorage.getItem('userSession');
       if (sessionStorageData) {
         const parsedData = JSON.parse(sessionStorageData);
+        console.log('✅ Datos cargados desde sessionStorage:', parsedData);
         setSessionData(parsedData);
         return;
       }
+
+      console.log('ℹ️ No se encontraron datos de sesión guardados');
     } catch (error) {
-      console.error('Error al cargar datos de sesión:', error);
+      console.error('❌ Error al cargar datos de sesión:', error);
       clearSessionData();
     }
   };
 
-  const saveSessionData = (user: User, rememberMe: boolean = false) => {
+  const saveSessionData = (
+    user: User,
+    rememberMe: boolean = false,
+    userProfile?: {
+      firstName?: string;
+      lastName?: string;
+      role?: 'ESTUDIANTE' | 'PROFESOR' | 'ADMINISTRADOR';
+    }
+  ) => {
+    console.log('💾 saveSessionData llamado con:', {
+      userId: user.uid,
+      rememberMe,
+      userProfile,
+    });
+
     const data: SessionData = {
       uid: user.uid,
       email: user.email,
@@ -49,8 +72,12 @@ export const useSessionStorage = () => {
       photoURL: user.photoURL,
       lastLogin: new Date().toISOString(),
       rememberMe,
+      firstName: userProfile?.firstName,
+      lastName: userProfile?.lastName,
+      role: userProfile?.role,
     };
 
+    console.log('📦 Datos de sesión creados:', data);
     setSessionData(data);
 
     try {
@@ -64,6 +91,7 @@ export const useSessionStorage = () => {
         document.cookie = `userSession=${JSON.stringify(data)}; max-age=${
           30 * 24 * 60 * 60
         }; path=/; secure; samesite=strict`;
+        console.log('✅ Datos guardados en localStorage (recordarme = true)');
       } else {
         // Guardar en sessionStorage (temporal)
         sessionStorage.setItem('userSession', JSON.stringify(data));
@@ -74,13 +102,54 @@ export const useSessionStorage = () => {
         document.cookie = `userSession=${JSON.stringify(
           data
         )}; path=/; secure; samesite=strict`;
+        console.log(
+          '✅ Datos guardados en sessionStorage (recordarme = false)'
+        );
       }
     } catch (error) {
-      console.error('Error al guardar datos de sesión:', error);
+      console.error('❌ Error al guardar datos de sesión:', error);
     }
   };
 
-  const clearSessionData = () => {
+  const updateSessionWithProfile = useCallback(
+    (userProfile: {
+      firstName: string;
+      lastName: string;
+      role: 'ESTUDIANTE' | 'PROFESOR' | 'ADMINISTRADOR';
+    }) => {
+      if (sessionData) {
+        const updatedData = {
+          ...sessionData,
+          firstName: userProfile.firstName,
+          lastName: userProfile.lastName,
+          role: userProfile.role,
+        };
+        setSessionData(updatedData);
+
+        try {
+          const storage = sessionData.rememberMe
+            ? localStorage
+            : sessionStorage;
+          storage.setItem('userSession', JSON.stringify(updatedData));
+
+          // Actualizar cookie también
+          const cookieValue = `userSession=${JSON.stringify(updatedData)}`;
+          if (sessionData.rememberMe) {
+            document.cookie = `${cookieValue}; max-age=${
+              30 * 24 * 60 * 60
+            }; path=/; secure; samesite=strict`;
+          } else {
+            document.cookie = `${cookieValue}; path=/; secure; samesite=strict`;
+          }
+        } catch (error) {
+          console.error('Error al actualizar perfil en sesión:', error);
+        }
+      }
+    },
+    [sessionData]
+  );
+
+  const clearSessionData = useCallback(() => {
     setSessionData(null);
     try {
       localStorage.removeItem('userSession');
@@ -92,9 +161,9 @@ export const useSessionStorage = () => {
     } catch (error) {
       console.error('Error al limpiar datos de sesión:', error);
     }
-  };
+  }, []);
 
-  const updateLastLogin = () => {
+  const updateLastLogin = useCallback(() => {
     if (sessionData) {
       const updatedData = {
         ...sessionData,
@@ -109,7 +178,7 @@ export const useSessionStorage = () => {
         console.error('Error al actualizar último login:', error);
       }
     }
-  };
+  }, [sessionData]);
 
   const isSessionValid = (): boolean => {
     if (!sessionData) return false;
@@ -132,6 +201,7 @@ export const useSessionStorage = () => {
   return {
     sessionData,
     saveSessionData,
+    updateSessionWithProfile,
     clearSessionData,
     updateLastLogin,
     isSessionValid,
