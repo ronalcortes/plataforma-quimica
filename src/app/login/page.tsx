@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -13,7 +13,7 @@ interface LoginFormData {
   rememberMe: boolean;
 }
 
-const LoginPage = () => {
+const LoginForm = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { signIn, resetPassword } = useAuth();
@@ -115,6 +115,138 @@ const LoginPage = () => {
   };
 
   return (
+    <div className='container mx-auto px-4 py-12'>
+      <div className='max-w-md mx-auto'>
+        {/* Título */}
+        <div className='text-center mb-8'>
+          <h2 className='text-3xl font-bold mb-2 sugamuxi-text-black'>
+            Iniciar Sesión
+          </h2>
+          <p className='text-gray-600'>
+            Accede a tu cuenta de la plataforma química
+          </p>
+        </div>
+
+        {/* Mensajes de error y éxito */}
+        {error && (
+          <div className='mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg'>
+            {error}
+          </div>
+        )}
+        {success && (
+          <div className='mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg'>
+            {success}
+          </div>
+        )}
+
+        {/* Formulario de login */}
+        <div className='card p-8'>
+          <form onSubmit={handleSubmit} className='space-y-6'>
+            <div>
+              <label
+                htmlFor='email'
+                className='block text-sm font-medium mb-2 sugamuxi-text-black'
+              >
+                Correo Electrónico <span className='text-red-500'>*</span>
+              </label>
+              <input
+                type='email'
+                id='email'
+                name='email'
+                value={formData.email}
+                onChange={handleInputChange}
+                className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all'
+                placeholder='tu@email.com'
+                required
+              />
+            </div>
+
+            <PasswordInput
+              id='password'
+              name='password'
+              label='Contraseña'
+              placeholder='••••••••'
+              value={formData.password}
+              onChange={handleInputChange}
+              required
+            />
+
+            <div className='flex items-center justify-between'>
+              <label className='flex items-center'>
+                <input
+                  type='checkbox'
+                  name='rememberMe'
+                  checked={formData.rememberMe}
+                  onChange={handleInputChange}
+                  className='rounded border-gray-300 text-green-600 focus:ring-green-500'
+                />
+                <span className='ml-2 text-sm text-gray-600'>Recordarme</span>
+              </label>
+              <button
+                type='button'
+                onClick={() => setShowResetPassword(!showResetPassword)}
+                className='text-sm hover:underline sugamuxi-text-green'
+              >
+                ¿Olvidaste tu contraseña?
+              </button>
+            </div>
+
+            {/* Sección de restablecer contraseña */}
+            {showResetPassword && (
+              <div className='p-4 bg-gray-50 rounded-lg border'>
+                <p className='text-sm text-gray-600 mb-3'>
+                  Ingresa tu correo electrónico y te enviaremos un enlace para
+                  restablecer tu contraseña.
+                </p>
+                <button
+                  type='button'
+                  onClick={handleResetPassword}
+                  disabled={loading}
+                  className='w-full bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed'
+                >
+                  {loading
+                    ? 'Enviando...'
+                    : 'Enviar enlace de restablecimiento'}
+                </button>
+              </div>
+            )}
+
+            <button
+              type='submit'
+              disabled={loading}
+              className='w-full button-primary py-3 text-lg disabled:opacity-50 disabled:cursor-not-allowed'
+            >
+              {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+            </button>
+          </form>
+
+          <div className='mt-6 text-center'>
+            <p className='text-gray-600'>
+              ¿No tienes cuenta?{' '}
+              <Link
+                href='/register'
+                className='font-semibold hover:underline sugamuxi-text-green'
+              >
+                Regístrate aquí
+              </Link>
+            </p>
+          </div>
+        </div>
+
+        {/* Información adicional */}
+        <div className='mt-8 text-center'>
+          <p className='text-sm text-gray-500'>
+            Al iniciar sesión, aceptas nuestros términos de servicio y política
+            de privacidad.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const LoginPage = () => {
+  return (
     <div className='min-h-screen bg-white'>
       {/* Header con estilo Sugamuxi */}
       <header className='sugamuxi-header'>
@@ -142,133 +274,18 @@ const LoginPage = () => {
         </div>
       </header>
 
-      <div className='container mx-auto px-4 py-12'>
-        <div className='max-w-md mx-auto'>
-          {/* Título */}
-          <div className='text-center mb-8'>
-            <h2 className='text-3xl font-bold mb-2 sugamuxi-text-black'>
-              Iniciar Sesión
-            </h2>
-            <p className='text-gray-600'>
-              Accede a tu cuenta de la plataforma química
-            </p>
-          </div>
-
-          {/* Mensajes de error y éxito */}
-          {error && (
-            <div className='mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg'>
-              {error}
-            </div>
-          )}
-          {success && (
-            <div className='mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg'>
-              {success}
-            </div>
-          )}
-
-          {/* Formulario de login */}
-          <div className='card p-8'>
-            <form onSubmit={handleSubmit} className='space-y-6'>
-              <div>
-                <label
-                  htmlFor='email'
-                  className='block text-sm font-medium mb-2 sugamuxi-text-black'
-                >
-                  Correo Electrónico <span className='text-red-500'>*</span>
-                </label>
-                <input
-                  type='email'
-                  id='email'
-                  name='email'
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all'
-                  placeholder='tu@email.com'
-                  required
-                />
-              </div>
-
-              <PasswordInput
-                id='password'
-                name='password'
-                label='Contraseña'
-                placeholder='••••••••'
-                value={formData.password}
-                onChange={handleInputChange}
-                required
-              />
-
-              <div className='flex items-center justify-between'>
-                <label className='flex items-center'>
-                  <input
-                    type='checkbox'
-                    name='rememberMe'
-                    checked={formData.rememberMe}
-                    onChange={handleInputChange}
-                    className='rounded border-gray-300 text-green-600 focus:ring-green-500'
-                  />
-                  <span className='ml-2 text-sm text-gray-600'>Recordarme</span>
-                </label>
-                <button
-                  type='button'
-                  onClick={() => setShowResetPassword(!showResetPassword)}
-                  className='text-sm hover:underline sugamuxi-text-green'
-                >
-                  ¿Olvidaste tu contraseña?
-                </button>
-              </div>
-
-              {/* Sección de restablecer contraseña */}
-              {showResetPassword && (
-                <div className='p-4 bg-gray-50 rounded-lg border'>
-                  <p className='text-sm text-gray-600 mb-3'>
-                    Ingresa tu correo electrónico y te enviaremos un enlace para
-                    restablecer tu contraseña.
-                  </p>
-                  <button
-                    type='button'
-                    onClick={handleResetPassword}
-                    disabled={loading}
-                    className='w-full bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed'
-                  >
-                    {loading
-                      ? 'Enviando...'
-                      : 'Enviar enlace de restablecimiento'}
-                  </button>
-                </div>
-              )}
-
-              <button
-                type='submit'
-                disabled={loading}
-                className='w-full button-primary py-3 text-lg disabled:opacity-50 disabled:cursor-not-allowed'
-              >
-                {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
-              </button>
-            </form>
-
-            <div className='mt-6 text-center'>
-              <p className='text-gray-600'>
-                ¿No tienes cuenta?{' '}
-                <Link
-                  href='/register'
-                  className='font-semibold hover:underline sugamuxi-text-green'
-                >
-                  Regístrate aquí
-                </Link>
-              </p>
+      <Suspense
+        fallback={
+          <div className='flex justify-center items-center min-h-[400px]'>
+            <div className='text-center'>
+              <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4'></div>
+              <p className='text-gray-600'>Cargando...</p>
             </div>
           </div>
-
-          {/* Información adicional */}
-          <div className='mt-8 text-center'>
-            <p className='text-sm text-gray-500'>
-              Al iniciar sesión, aceptas nuestros términos de servicio y
-              política de privacidad.
-            </p>
-          </div>
-        </div>
-      </div>
+        }
+      >
+        <LoginForm />
+      </Suspense>
     </div>
   );
 };
