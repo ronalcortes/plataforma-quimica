@@ -5,8 +5,6 @@ import {
   PencilIcon,
   TrashIcon,
   CheckCircleIcon,
-  ClockIcon,
-  ShareIcon,
   EyeIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
@@ -14,6 +12,7 @@ import {
   CheckCircleIcon as CheckCircleIconSolid,
   ClockIcon as ClockIconSolid,
 } from '@heroicons/react/24/solid';
+import Image from 'next/image';
 
 interface GameCardProps {
   game: EducaplayGame;
@@ -60,24 +59,6 @@ export const GameCard: React.FC<GameCardProps> = ({
     }
   };
 
-  const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: game.title,
-          text: game.description,
-          url: game.educaplayUrl,
-        });
-      } catch (error) {
-        console.log('Error sharing:', error);
-      }
-    } else {
-      // Fallback: copiar al portapapeles
-      navigator.clipboard.writeText(game.educaplayUrl);
-      // Aquí podrías mostrar un snackbar de confirmación
-    }
-  };
-
   const handleDelete = () => {
     if (onDelete && game.id) {
       onDelete(game.id);
@@ -109,11 +90,26 @@ export const GameCard: React.FC<GameCardProps> = ({
           </div>
         )}
 
-        <div className='p-6 flex-grow'>
-          <h3 className='text-xl font-bold text-blue-600 mb-3 line-clamp-2 min-h-[3.5rem]'>
-            {game.title}
-          </h3>
+        {/* Logo del Colegio */}
+        <div className='relative h-48 bg-gradient-to-br from-blue-600 to-blue-800 rounded-t-xl flex items-center justify-center overflow-hidden'>
+          <div className='absolute inset-0 bg-white bg-opacity-10'></div>
+          <div className='relative z-10 text-center'>
+            <div className='w-20 h-20 mx-auto mb-3 bg-white rounded-full flex items-center justify-center shadow-lg'>
+              <Image
+                src='/Logo.png'
+                width={100}
+                height={100}
+                alt='Colegio de Sugamuxi'
+                className='w-16 h-16 object-contain'
+              />
+            </div>
+            <h3 className='text-white font-bold text-lg line-clamp-2 px-4 drop-shadow-lg'>
+              {game.title}
+            </h3>
+          </div>
+        </div>
 
+        <div className='p-6 flex-grow'>
           <p className='text-gray-600 mb-4 line-clamp-3 min-h-[4.5rem] text-sm'>
             {game.description}
           </p>
@@ -164,62 +160,65 @@ export const GameCard: React.FC<GameCardProps> = ({
           </div>
         </div>
 
-        <div className='px-6 pb-6 flex justify-between items-center'>
-          <button
-            onClick={() => setShowPreview(true)}
-            className='bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors duration-200'
-          >
-            <PlayIcon className='w-4 h-4' />
-            Jugar
-          </button>
-
-          <div className='flex gap-2'>
-            <button
-              onClick={handleShare}
-              className='p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200'
-              title='Compartir'
-            >
-              <ShareIcon className='w-5 h-5' />
-            </button>
-
+        {/* Botones reorganizados para evitar desbordamiento */}
+        <div className='px-6 pb-6'>
+          {/* Botón principal de jugar */}
+          <div className='mb-3'>
             <button
               onClick={() => setShowPreview(true)}
-              className='p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200'
+              className='w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg flex items-center justify-center gap-2 transition-colors duration-200 font-medium'
+            >
+              <PlayIcon className='w-5 h-5' />
+              Jugar Ahora
+            </button>
+          </div>
+
+          {/* Botones secundarios en grid */}
+          <div className='grid grid-cols-3 gap-2'>
+            <button
+              onClick={() => setShowPreview(true)}
+              className='p-3 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200 flex flex-col items-center gap-1'
               title='Vista previa'
             >
-              <EyeIcon className='w-5 h-5' />
+              <EyeIcon className='w-4 h-4' />
+              <span className='text-xs'>Ver</span>
             </button>
 
             {canEdit && onEdit && (
               <button
                 onClick={() => onEdit(game)}
-                className='p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200'
+                className='p-3 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200 flex flex-col items-center gap-1'
                 title='Editar'
               >
-                <PencilIcon className='w-5 h-5' />
+                <PencilIcon className='w-4 h-4' />
+                <span className='text-xs'>Editar</span>
               </button>
             )}
 
             {canDelete && onDelete && (
               <button
                 onClick={() => setShowDeleteConfirm(true)}
-                className='p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200'
+                className='p-3 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200 flex flex-col items-center gap-1'
                 title='Eliminar'
               >
-                <TrashIcon className='w-5 h-5' />
-              </button>
-            )}
-
-            {canApprove && onApprove && !game.isApproved && game.id && (
-              <button
-                onClick={() => onApprove(game.id!)}
-                className='px-3 py-1 bg-green-100 text-green-800 border border-green-200 rounded-lg hover:bg-green-200 transition-colors duration-200 flex items-center gap-1 text-sm'
-              >
-                <CheckCircleIcon className='w-4 h-4' />
-                Aprobar
+                <TrashIcon className='w-4 h-4' />
+                <span className='text-xs'>Eliminar</span>
               </button>
             )}
           </div>
+
+          {/* Botón de aprobar si es necesario */}
+          {canApprove && onApprove && !game.isApproved && game.id && (
+            <div className='mt-3'>
+              <button
+                onClick={() => onApprove(game.id!)}
+                className='w-full px-3 py-2 bg-green-100 text-green-800 border border-green-200 rounded-lg hover:bg-green-200 transition-colors duration-200 flex items-center justify-center gap-2 text-sm font-medium'
+              >
+                <CheckCircleIcon className='w-4 h-4' />
+                Aprobar Juego
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -232,6 +231,7 @@ export const GameCard: React.FC<GameCardProps> = ({
               <button
                 onClick={() => setShowPreview(false)}
                 className='p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200'
+                title='Cerrar vista previa'
               >
                 <XMarkIcon className='w-6 h-6' />
               </button>
@@ -259,8 +259,8 @@ export const GameCard: React.FC<GameCardProps> = ({
               Confirmar eliminación
             </h3>
             <p className='text-gray-600 mb-6'>
-              ¿Estás seguro de que quieres eliminar el juego "{game.title}"?
-              Esta acción no se puede deshacer.
+              ¿Estás seguro de que quieres eliminar el juego &ldquo;{game.title}
+              &rdquo;? Esta acción no se puede deshacer.
             </p>
             <div className='flex gap-3 justify-end'>
               <button
