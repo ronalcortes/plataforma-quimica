@@ -1,8 +1,136 @@
-import React from 'react';
+'use client';
+
+import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '../../hooks/useAuth';
+import { useUserManagement } from '../../hooks/useUserManagement';
+import PasswordInput from '../../components/PasswordInput';
+
+interface FormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: 'ESTUDIANTE' | 'PROFESOR' | 'ADMINISTRADOR';
+  password: string;
+  confirmPassword: string;
+  acceptTerms: boolean;
+}
 
 const RegisterPage = () => {
+  const router = useRouter();
+  const { signUp } = useAuth();
+  const { createUserProfile } = useUserManagement();
+
+  const [formData, setFormData] = useState<FormData>({
+    firstName: '',
+    lastName: '',
+    email: '',
+    role: 'ESTUDIANTE', // Por defecto ESTUDIANTE en mayúscula
+    password: '',
+    confirmPassword: '',
+    acceptTerms: false,
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value, type } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]:
+        type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
+    }));
+  };
+
+  const validateForm = (): boolean => {
+    if (!formData.firstName.trim()) {
+      setError('El nombre es requerido');
+      return false;
+    }
+    if (!formData.lastName.trim()) {
+      setError('El apellido es requerido');
+      return false;
+    }
+    if (!formData.email.trim()) {
+      setError('El correo electrónico es requerido');
+      return false;
+    }
+    if (!formData.role) {
+      setError('Debes seleccionar un rol');
+      return false;
+    }
+    if (formData.password.length < 6) {
+      setError('La contraseña debe tener al menos 6 caracteres');
+      return false;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      setError('Las contraseñas no coinciden');
+      return false;
+    }
+    if (!formData.acceptTerms) {
+      setError('Debes aceptar los términos de servicio');
+      return false;
+    }
+    return true;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+
+    if (!validateForm()) {
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Registrar usuario en Firebase Auth
+      const { user, error: authError } = await signUp(
+        formData.email,
+        formData.password
+      );
+
+      if (authError || !user) {
+        setError(authError || 'Error al crear la cuenta');
+        return;
+      }
+
+      // Crear perfil de usuario en Firestore
+      const { error: profileError } = await createUserProfile(user, {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        role: formData.role,
+      });
+
+      if (profileError) {
+        setError(
+          'Cuenta creada pero error al guardar el perfil: ' + profileError
+        );
+        return;
+      }
+
+      setSuccess('¡Cuenta creada exitosamente! Redirigiendo...');
+
+      // Redirigir después de un breve delay
+      setTimeout(() => {
+        router.push('/login');
+      }, 2000);
+    } catch (err) {
+      setError('Error inesperado al crear la cuenta');
+      console.error('Error en registro:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className='min-h-screen bg-white'>
       {/* Header con estilo Sugamuxi */}
@@ -43,22 +171,38 @@ const RegisterPage = () => {
             </p>
           </div>
 
+          {/* Mensajes de error y éxito */}
+          {error && (
+            <div className='mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg'>
+              {error}
+            </div>
+          )}
+          {success && (
+            <div className='mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg'>
+              {success}
+            </div>
+          )}
+
           {/* Formulario de registro */}
           <div className='card p-8'>
-            <form className='space-y-6'>
+            <form onSubmit={handleSubmit} className='space-y-6'>
               <div className='grid grid-cols-2 gap-4'>
                 <div>
                   <label
                     htmlFor='firstName'
                     className='block text-sm font-medium mb-2 sugamuxi-text-black'
                   >
-                    Nombre
+                    Nombre <span className='text-red-500'>*</span>
                   </label>
                   <input
                     type='text'
                     id='firstName'
+                    name='firstName'
+                    value={formData.firstName}
+                    onChange={handleInputChange}
                     className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all'
                     placeholder='Juan'
+                    required
                   />
                 </div>
                 <div>
@@ -66,13 +210,17 @@ const RegisterPage = () => {
                     htmlFor='lastName'
                     className='block text-sm font-medium mb-2 sugamuxi-text-black'
                   >
-                    Apellido
+                    Apellido <span className='text-red-500'>*</span>
                   </label>
                   <input
                     type='text'
                     id='lastName'
+                    name='lastName'
+                    value={formData.lastName}
+                    onChange={handleInputChange}
                     className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all'
                     placeholder='Pérez'
+                    required
                   />
                 </div>
               </div>
@@ -82,13 +230,17 @@ const RegisterPage = () => {
                   htmlFor='email'
                   className='block text-sm font-medium mb-2 sugamuxi-text-black'
                 >
-                  Correo Electrónico
+                  Correo Electrónico <span className='text-red-500'>*</span>
                 </label>
                 <input
                   type='email'
                   id='email'
+                  name='email'
+                  value={formData.email}
+                  onChange={handleInputChange}
                   className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all'
                   placeholder='tu@email.com'
+                  required
                 />
               </div>
 
@@ -97,54 +249,51 @@ const RegisterPage = () => {
                   htmlFor='role'
                   className='block text-sm font-medium mb-2 sugamuxi-text-black'
                 >
-                  Rol
+                  Rol <span className='text-red-500'>*</span>
                 </label>
                 <select
                   id='role'
+                  name='role'
+                  value={formData.role}
+                  onChange={handleInputChange}
                   className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all'
+                  required
                 >
-                  <option value=''>Selecciona tu rol</option>
-                  <option value='student'>Estudiante</option>
-                  <option value='teacher'>Profesor</option>
-                  <option value='admin'>Administrador</option>
+                  <option value='ESTUDIANTE'>Estudiante</option>
+                  <option value='PROFESOR'>Profesor</option>
+                  <option value='ADMINISTRADOR'>Administrador</option>
                 </select>
               </div>
 
-              <div>
-                <label
-                  htmlFor='password'
-                  className='block text-sm font-medium mb-2 sugamuxi-text-black'
-                >
-                  Contraseña
-                </label>
-                <input
-                  type='password'
-                  id='password'
-                  className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all'
-                  placeholder='••••••••'
-                />
-              </div>
+              <PasswordInput
+                id='password'
+                name='password'
+                label='Contraseña'
+                placeholder='••••••••'
+                value={formData.password}
+                onChange={handleInputChange}
+                required
+              />
 
-              <div>
-                <label
-                  htmlFor='confirmPassword'
-                  className='block text-sm font-medium mb-2 sugamuxi-text-black'
-                >
-                  Confirmar Contraseña
-                </label>
-                <input
-                  type='password'
-                  id='confirmPassword'
-                  className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all'
-                  placeholder='••••••••'
-                />
-              </div>
+              <PasswordInput
+                id='confirmPassword'
+                name='confirmPassword'
+                label='Confirmar Contraseña'
+                placeholder='••••••••'
+                value={formData.confirmPassword}
+                onChange={handleInputChange}
+                required
+              />
 
               <div className='flex items-start'>
                 <label className='flex items-start'>
                   <input
                     type='checkbox'
+                    name='acceptTerms'
+                    checked={formData.acceptTerms}
+                    onChange={handleInputChange}
                     className='mt-1 rounded border-gray-300 text-green-600 focus:ring-green-500'
+                    required
                   />
                   <span className='ml-2 text-sm text-gray-600'>
                     Acepto los{' '}
@@ -155,15 +304,17 @@ const RegisterPage = () => {
                     <a href='#' className='hover:underline sugamuxi-text-green'>
                       política de privacidad
                     </a>
+                    <span className='text-red-500 ml-1'>*</span>
                   </span>
                 </label>
               </div>
 
               <button
                 type='submit'
-                className='w-full button-primary py-3 text-lg'
+                disabled={loading}
+                className='w-full button-primary py-3 text-lg disabled:opacity-50 disabled:cursor-not-allowed'
               >
-                Crear Cuenta
+                {loading ? 'Creando cuenta...' : 'Crear Cuenta'}
               </button>
             </form>
 
