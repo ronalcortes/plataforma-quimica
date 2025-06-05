@@ -2,7 +2,7 @@ export interface EducaplayGame {
   id?: string;
   userId: string;
   title: string;
-  description: string;
+  description?: string;
   educaplayUrl: string;
   iframeUrl: string;
   gameType: string;
@@ -18,12 +18,8 @@ export interface EducaplayGame {
 
 export interface GameFormData {
   title: string;
-  description: string;
   educaplayUrl: string;
   gameType: string;
-  tags: string[];
-  difficulty: 'Fácil' | 'Medio' | 'Difícil';
-  subject: string;
 }
 
 export interface GameFilters {

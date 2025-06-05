@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { GameFormData, EducaplayGame } from '../types/game';
-import { XMarkIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 
 interface GameFormProps {
   isOpen: boolean;
@@ -32,24 +32,6 @@ const gameTypes = [
   'Line Up',
 ];
 
-const subjects = [
-  'Matemáticas',
-  'Ciencias',
-  'Historia',
-  'Geografía',
-  'Lengua',
-  'Inglés',
-  'Arte',
-  'Música',
-  'Educación Física',
-  'Tecnología',
-  'Filosofía',
-  'Química',
-  'Física',
-  'Biología',
-  'Otro',
-];
-
 export const GameForm: React.FC<GameFormProps> = ({
   isOpen,
   onClose,
@@ -59,37 +41,24 @@ export const GameForm: React.FC<GameFormProps> = ({
 }) => {
   const [formData, setFormData] = useState<GameFormData>({
     title: '',
-    description: '',
     educaplayUrl: '',
     gameType: '',
-    tags: [],
-    difficulty: 'Medio',
-    subject: '',
   });
 
-  const [newTag, setNewTag] = useState('');
   const [urlError, setUrlError] = useState('');
 
   useEffect(() => {
     if (editingGame) {
       setFormData({
         title: editingGame.title,
-        description: editingGame.description,
         educaplayUrl: editingGame.educaplayUrl,
         gameType: editingGame.gameType,
-        tags: editingGame.tags || [],
-        difficulty: editingGame.difficulty || 'Medio',
-        subject: editingGame.subject || '',
       });
     } else {
       setFormData({
         title: '',
-        description: '',
         educaplayUrl: '',
         gameType: '',
-        tags: [],
-        difficulty: 'Medio',
-        subject: '',
       });
     }
     setUrlError('');
@@ -112,23 +81,6 @@ export const GameForm: React.FC<GameFormProps> = ({
     }
   };
 
-  const addTag = () => {
-    if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
-      setFormData({
-        ...formData,
-        tags: [...formData.tags, newTag.trim()],
-      });
-      setNewTag('');
-    }
-  };
-
-  const removeTag = (tagToRemove: string) => {
-    setFormData({
-      ...formData,
-      tags: formData.tags.filter((tag) => tag !== tagToRemove),
-    });
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (urlError || !validateEducaplayUrl(formData.educaplayUrl)) {
@@ -148,14 +100,15 @@ export const GameForm: React.FC<GameFormProps> = ({
 
   return (
     <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4'>
-      <div className='bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto'>
+      <div className='bg-white rounded-lg w-full max-w-lg max-h-[90vh] overflow-y-auto'>
         <div className='flex justify-between items-center p-6 border-b'>
           <h2 className='text-2xl font-bold text-gray-800'>
-            {editingGame ? 'Editar Juego' : 'Agregar Nuevo Juego'}
+            {editingGame ? 'Editar Juego' : 'Agregar Nuevo Juego de Química'}
           </h2>
           <button
             onClick={onClose}
             className='p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200'
+            aria-label='Cerrar formulario'
           >
             <XMarkIcon className='w-6 h-6' />
           </button>
@@ -174,25 +127,8 @@ export const GameForm: React.FC<GameFormProps> = ({
               onChange={(e) =>
                 setFormData({ ...formData, title: e.target.value })
               }
-              className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-              placeholder='Ingresa el título del juego'
-            />
-          </div>
-
-          {/* Descripción */}
-          <div>
-            <label className='block text-sm font-medium text-gray-700 mb-2'>
-              Descripción *
-            </label>
-            <textarea
-              required
-              value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
-              rows={3}
-              className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-              placeholder='Describe brevemente el juego y su objetivo'
+              className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900'
+              placeholder='Ej: Tabla Periódica Interactiva'
             />
           </div>
 
@@ -206,7 +142,7 @@ export const GameForm: React.FC<GameFormProps> = ({
               required
               value={formData.educaplayUrl}
               onChange={(e) => handleUrlChange(e.target.value)}
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 ${
                 urlError ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder='https://es.educaplay.com/recursos-educativos/12345-nombre-juego.html'
@@ -219,122 +155,39 @@ export const GameForm: React.FC<GameFormProps> = ({
             </p>
           </div>
 
-          {/* Tipo de Juego y Materia */}
-          <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-            <div>
-              <label className='block text-sm font-medium text-gray-700 mb-2'>
-                Tipo de Juego *
-              </label>
-              <select
-                required
-                value={formData.gameType}
-                onChange={(e) =>
-                  setFormData({ ...formData, gameType: e.target.value })
-                }
-                className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-              >
-                <option value=''>Selecciona un tipo</option>
-                {gameTypes.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className='block text-sm font-medium text-gray-700 mb-2'>
-                Materia *
-              </label>
-              <select
-                required
-                value={formData.subject}
-                onChange={(e) =>
-                  setFormData({ ...formData, subject: e.target.value })
-                }
-                className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-              >
-                <option value=''>Selecciona una materia</option>
-                {subjects.map((subject) => (
-                  <option key={subject} value={subject}>
-                    {subject}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Dificultad */}
+          {/* Tipo de Juego */}
           <div>
             <label className='block text-sm font-medium text-gray-700 mb-2'>
-              Dificultad
+              Tipo de Juego *
             </label>
-            <div className='flex gap-4'>
-              {(['Fácil', 'Medio', 'Difícil'] as const).map((level) => (
-                <label key={level} className='flex items-center'>
-                  <input
-                    type='radio'
-                    name='difficulty'
-                    value={level}
-                    checked={formData.difficulty === level}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        difficulty: e.target.value as any,
-                      })
-                    }
-                    className='mr-2 text-blue-600 focus:ring-blue-500'
-                  />
-                  <span className='text-sm text-gray-700'>{level}</span>
-                </label>
+            <select
+              required
+              value={formData.gameType}
+              onChange={(e) =>
+                setFormData({ ...formData, gameType: e.target.value })
+              }
+              className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900'
+              aria-label='Seleccionar tipo de juego'
+            >
+              <option value=''>Selecciona un tipo</option>
+              {gameTypes.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
               ))}
-            </div>
+            </select>
           </div>
 
-          {/* Tags */}
-          <div>
-            <label className='block text-sm font-medium text-gray-700 mb-2'>
-              Etiquetas
-            </label>
-            <div className='flex gap-2 mb-2'>
-              <input
-                type='text'
-                value={newTag}
-                onChange={(e) => setNewTag(e.target.value)}
-                onKeyPress={(e) =>
-                  e.key === 'Enter' && (e.preventDefault(), addTag())
-                }
-                className='flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-                placeholder='Agregar etiqueta'
-              />
-              <button
-                type='button'
-                onClick={addTag}
-                className='px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2'
-              >
-                <PlusIcon className='w-4 h-4' />
-                Agregar
-              </button>
-            </div>
-            {formData.tags.length > 0 && (
-              <div className='flex flex-wrap gap-2'>
-                {formData.tags.map((tag, index) => (
-                  <span
-                    key={index}
-                    className='px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm flex items-center gap-2'
-                  >
-                    {tag}
-                    <button
-                      type='button'
-                      onClick={() => removeTag(tag)}
-                      className='text-blue-600 hover:text-blue-800'
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
+          {/* Información adicional */}
+          <div className='bg-blue-50 border border-blue-200 rounded-lg p-4'>
+            <h3 className='text-sm font-medium text-blue-900 mb-2'>
+              Información del juego:
+            </h3>
+            <ul className='text-sm text-blue-900 space-y-1'>
+              <li>• Materia: Química (automático)</li>
+              <li>• Dificultad: Medio (automático)</li>
+              <li>• Se generará una descripción automáticamente</li>
+            </ul>
           </div>
 
           {/* Botones */}

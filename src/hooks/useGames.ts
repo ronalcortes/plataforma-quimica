@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useFirestore } from './useFirestore';
 import { EducaplayGame, GameFormData, GameFilters } from '../types/game';
-import { where, orderBy, limit } from 'firebase/firestore';
+import { limit } from 'firebase/firestore';
 
 export const useGames = (userId?: string) => {
   const {
@@ -42,6 +42,10 @@ export const useGames = (userId?: string) => {
       ...gameData,
       userId,
       iframeUrl,
+      description: `Juego de ${gameData.gameType} - ${gameData.title}`,
+      subject: 'Química',
+      difficulty: 'Medio',
+      tags: [],
       isApproved: false,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -58,44 +62,59 @@ export const useGames = (userId?: string) => {
   const loadGames = async (
     userIdFilter?: string,
     filters: GameFilters = {},
-    pageSize: number = 10,
-    lastGameDate?: Date
+    pageSize: number = 100 // Aumentamos el límite para filtrar en cliente
   ) => {
     const constraints = [];
 
-    // Filtro por usuario si se proporciona
-    if (userIdFilter) {
-      constraints.push(where('userId', '==', userIdFilter));
-    }
-
-    // Aplicar filtros adicionales
-    if (filters.subject) {
-      constraints.push(where('subject', '==', filters.subject));
-    }
-
-    if (filters.difficulty) {
-      constraints.push(where('difficulty', '==', filters.difficulty));
-    }
-
-    if (filters.isApproved !== undefined) {
-      constraints.push(where('isApproved', '==', filters.isApproved));
-    }
-
-    if (filters.gameType) {
-      constraints.push(where('gameType', '==', filters.gameType));
-    }
-
-    // Ordenar por fecha de creación (más recientes primero)
-    constraints.push(orderBy('createdAt', 'desc'));
-
-    // Limitar resultados
+    // Limitar resultados sin filtros para evitar índices completamente
     constraints.push(limit(pageSize));
 
     const result = await getCollection('games', constraints);
 
     if (result.data && !result.error) {
-      setGames(result.data as EducaplayGame[]);
-      setTotalGames(result.data.length);
+      let filteredData = result.data as EducaplayGame[];
+
+      // Filtrar por usuario en el cliente
+      if (userIdFilter) {
+        filteredData = filteredData.filter(
+          (game) => game.userId === userIdFilter
+        );
+      }
+
+      // Ordenar por fecha en el cliente (más recientes primero)
+      filteredData.sort((a, b) => {
+        const timeA = a.createdAt instanceof Date ? a.createdAt.getTime() : 0;
+        const timeB = b.createdAt instanceof Date ? b.createdAt.getTime() : 0;
+        return timeB - timeA;
+      });
+
+      // Aplicar filtros adicionales en el cliente
+      if (filters.subject) {
+        filteredData = filteredData.filter(
+          (game) => game.subject === filters.subject
+        );
+      }
+
+      if (filters.difficulty) {
+        filteredData = filteredData.filter(
+          (game) => game.difficulty === filters.difficulty
+        );
+      }
+
+      if (filters.isApproved !== undefined) {
+        filteredData = filteredData.filter(
+          (game) => game.isApproved === filters.isApproved
+        );
+      }
+
+      if (filters.gameType) {
+        filteredData = filteredData.filter(
+          (game) => game.gameType === filters.gameType
+        );
+      }
+
+      setGames(filteredData);
+      setTotalGames(filteredData.length);
     }
 
     return result;

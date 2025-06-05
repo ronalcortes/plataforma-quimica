@@ -1,21 +1,24 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { GameCard } from '../../components/GameCard';
-import { GameForm } from '../../components/GameForm';
-import { useGames } from '../../hooks/useGames';
-import { EducaplayGame, GameFilters } from '../../types/game';
+import { useRouter } from 'next/navigation';
+import { GameCard } from '../../../components/GameCard';
+import { GameForm } from '../../../components/GameForm';
+import { Pagination } from '../../../components/Pagination';
+import { useGames } from '../../../hooks/useGames';
+import { useAuthContext } from '../../../contexts/AuthContext';
+import { EducaplayGame, GameFilters, GameFormData } from '../../../types/game';
 import {
   PlusIcon,
-  FunnelIcon,
   MagnifyingGlassIcon,
   AdjustmentsHorizontalIcon,
+  FunnelIcon,
 } from '@heroicons/react/24/outline';
 
-// Mock user ID - en una aplicación real esto vendría del contexto de autenticación
-const MOCK_USER_ID = 'user123';
-
 export default function GamesPage() {
+  const { user, loading: authLoading } = useAuthContext();
+  const router = useRouter();
+
   const {
     games,
     loading,
@@ -25,7 +28,7 @@ export default function GamesPage() {
     updateGame,
     removeGame,
     approveGame,
-  } = useGames(MOCK_USER_ID);
+  } = useGames(user?.uid);
 
   const [showForm, setShowForm] = useState(false);
   const [editingGame, setEditingGame] = useState<EducaplayGame | null>(null);
@@ -35,11 +38,43 @@ export default function GamesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [gamesPerPage] = useState(12);
 
+  // Verificar autenticación
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
+
+  // Recargar juegos cuando cambien los filtros
+  useEffect(() => {
+    if (user?.uid) {
+      loadGames(user.uid, filters);
+    }
+  }, [filters, user?.uid]);
+
+  // Mostrar loading mientras se verifica la autenticación
+  if (authLoading) {
+    return (
+      <div className='min-h-screen bg-gray-50 flex items-center justify-center'>
+        <div className='text-center'>
+          <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4'></div>
+          <p className='text-gray-600'>Verificando autenticación...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Si no hay usuario, no renderizar nada (se está redirigiendo)
+  if (!user) {
+    return null;
+  }
+
   // Filtrar juegos basado en búsqueda y filtros
   const filteredGames = games.filter((game) => {
     const matchesSearch =
       game.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      game.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (game.description &&
+        game.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
       game.gameType.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesSubject = !filters.subject || game.subject === filters.subject;
@@ -68,9 +103,11 @@ export default function GamesPage() {
     startIndex + gamesPerPage
   );
 
-  const handleCreateGame = async (gameData: any) => {
-    await createGame(gameData, MOCK_USER_ID);
-    setShowForm(false);
+  const handleCreateGame = async (gameData: GameFormData) => {
+    if (user?.uid) {
+      await createGame(gameData, user.uid);
+      setShowForm(false);
+    }
   };
 
   const handleEditGame = (game: EducaplayGame) => {
@@ -78,7 +115,7 @@ export default function GamesPage() {
     setShowForm(true);
   };
 
-  const handleUpdateGame = async (gameData: any) => {
+  const handleUpdateGame = async (gameData: GameFormData) => {
     if (editingGame?.id) {
       await updateGame(editingGame.id, gameData);
       setEditingGame(null);
@@ -106,15 +143,6 @@ export default function GamesPage() {
       <div className='bg-white shadow-sm border-b'>
         <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6'>
           <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4'>
-            <div>
-              <h1 className='text-3xl font-bold text-gray-900'>
-                Mis Juegos Educativos
-              </h1>
-              <p className='text-gray-600 mt-1'>
-                Gestiona tus juegos de Educaplay y compártelos con tus
-                estudiantes
-              </p>
-            </div>
             <button
               onClick={() => setShowForm(true)}
               className='bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors duration-200 shadow-lg hover:shadow-xl'
@@ -174,6 +202,7 @@ export default function GamesPage() {
                         subject: e.target.value || undefined,
                       })
                     }
+                    aria-label='Filtrar por materia'
                     className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'
                   >
                     <option value=''>Todas las materias</option>
@@ -198,6 +227,7 @@ export default function GamesPage() {
                         difficulty: e.target.value || undefined,
                       })
                     }
+                    aria-label='Filtrar por dificultad'
                     className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'
                   >
                     <option value=''>Todas las dificultades</option>
@@ -225,6 +255,7 @@ export default function GamesPage() {
                         isApproved: value === '' ? undefined : value === 'true',
                       });
                     }}
+                    aria-label='Filtrar por estado de aprobación'
                     className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'
                   >
                     <option value=''>Todos los estados</option>
@@ -247,34 +278,6 @@ export default function GamesPage() {
           )}
         </div>
 
-        {/* Estadísticas */}
-        <div className='grid grid-cols-1 md:grid-cols-4 gap-4 mb-6'>
-          <div className='bg-white rounded-lg shadow-sm p-6'>
-            <div className='text-2xl font-bold text-blue-600'>
-              {games.length}
-            </div>
-            <div className='text-gray-600'>Total de Juegos</div>
-          </div>
-          <div className='bg-white rounded-lg shadow-sm p-6'>
-            <div className='text-2xl font-bold text-green-600'>
-              {games.filter((g) => g.isApproved).length}
-            </div>
-            <div className='text-gray-600'>Aprobados</div>
-          </div>
-          <div className='bg-white rounded-lg shadow-sm p-6'>
-            <div className='text-2xl font-bold text-yellow-600'>
-              {games.filter((g) => !g.isApproved).length}
-            </div>
-            <div className='text-gray-600'>Pendientes</div>
-          </div>
-          <div className='bg-white rounded-lg shadow-sm p-6'>
-            <div className='text-2xl font-bold text-purple-600'>
-              {filteredGames.length}
-            </div>
-            <div className='text-gray-600'>Resultados</div>
-          </div>
-        </div>
-
         {/* Lista de juegos */}
         {loading ? (
           <div className='flex justify-center items-center py-12'>
@@ -285,7 +288,7 @@ export default function GamesPage() {
           <div className='bg-red-50 border border-red-200 rounded-lg p-6 text-center'>
             <p className='text-red-600'>Error al cargar los juegos: {error}</p>
             <button
-              onClick={() => loadGames(MOCK_USER_ID)}
+              onClick={() => user?.uid && loadGames(user.uid)}
               className='mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200'
             >
               Reintentar
@@ -304,7 +307,7 @@ export default function GamesPage() {
             <p className='text-gray-500 mb-6'>
               {searchTerm || Object.keys(filters).length > 0
                 ? 'Intenta ajustar tus filtros de búsqueda'
-                : 'Comienza agregando tu primer juego de Educaplay'}
+                : 'Comienza creando tu primer juego de Educaplay'}
             </p>
             {!searchTerm && Object.keys(filters).length === 0 && (
               <button
@@ -336,43 +339,13 @@ export default function GamesPage() {
             </div>
 
             {/* Paginación */}
-            {totalPages > 1 && (
-              <div className='flex justify-center items-center gap-2'>
-                <button
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                  className='px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200'
-                >
-                  Anterior
-                </button>
-
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                  (page) => (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={`px-4 py-2 rounded-lg transition-colors duration-200 ${
-                        currentPage === page
-                          ? 'bg-blue-600 text-white'
-                          : 'border border-gray-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  )
-                )}
-
-                <button
-                  onClick={() =>
-                    setCurrentPage(Math.min(totalPages, currentPage + 1))
-                  }
-                  disabled={currentPage === totalPages}
-                  className='px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200'
-                >
-                  Siguiente
-                </button>
-              </div>
-            )}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              itemsPerPage={gamesPerPage}
+              totalItems={filteredGames.length}
+            />
           </>
         )}
       </div>

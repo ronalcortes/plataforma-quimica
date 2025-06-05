@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../hooks/useAuth';
 import PasswordInput from '../../components/PasswordInput';
 
@@ -15,6 +15,7 @@ interface LoginFormData {
 
 const LoginPage = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { signIn, resetPassword } = useAuth();
 
   const [formData, setFormData] = useState<LoginFormData>({
@@ -62,7 +63,8 @@ const LoginPage = () => {
     try {
       const { user, error: authError } = await signIn(
         formData.email,
-        formData.password
+        formData.password,
+        formData.rememberMe
       );
 
       if (authError || !user) {
@@ -72,10 +74,9 @@ const LoginPage = () => {
 
       setSuccess('¡Inicio de sesión exitoso! Redirigiendo...');
 
-      // Redirigir después de un breve delay
-      setTimeout(() => {
-        router.push('/dashboard'); // Cambiar por la ruta del dashboard
-      }, 1500);
+      // Redirigir inmediatamente sin delay
+      const redirectTo = searchParams.get('redirect') || '/games';
+      router.push(redirectTo);
     } catch (err) {
       setError('Error inesperado al iniciar sesión');
       console.error('Error en login:', err);

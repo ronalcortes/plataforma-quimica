@@ -9,7 +9,8 @@ interface AuthContextType {
   loading: boolean;
   signIn: (
     email: string,
-    password: string
+    password: string,
+    rememberMe?: boolean
   ) => Promise<{ user: User | null; error: string | null }>;
   signUp: (
     email: string,
