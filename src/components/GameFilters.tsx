@@ -61,7 +61,10 @@ export const GameFilters: React.FC<GameFiltersProps> = ({
     (value) => value !== undefined && value !== ''
   ).length;
 
-  const updateFilter = (key: keyof GameFiltersType, value: any) => {
+  const updateFilter = (
+    key: keyof GameFiltersType,
+    value: string | boolean | undefined
+  ) => {
     onFiltersChange({
       ...filters,
       [key]: value === '' ? undefined : value,

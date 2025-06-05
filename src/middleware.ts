@@ -4,9 +4,6 @@ import type { NextRequest } from 'next/server';
 // Rutas que requieren autenticación
 const protectedRoutes = ['/dashboard', '/profile', '/admin', '/games'];
 
-// Rutas públicas (no requieren autenticación)
-const publicRoutes = ['/', '/login', '/register', '/about'];
-
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
