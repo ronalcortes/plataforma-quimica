@@ -12,7 +12,6 @@ import {
   PlusIcon,
   MagnifyingGlassIcon,
   AdjustmentsHorizontalIcon,
-  FunnelIcon,
 } from '@heroicons/react/24/outline';
 
 export default function GamesPage() {
@@ -33,8 +32,7 @@ export default function GamesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingGame, setEditingGame] = useState<EducaplayGame | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState<GameFilters>({});
+  const [filters] = useState<GameFilters>({});
   const [currentPage, setCurrentPage] = useState(1);
   const [gamesPerPage] = useState(12);
 
@@ -104,8 +102,8 @@ export default function GamesPage() {
   );
 
   const handleCreateGame = async (gameData: GameFormData) => {
-    if (user?.uid) {
-      await createGame(gameData, user.uid);
+    if (user?.uid && user?.email) {
+      await createGame(gameData, user.uid, user.email);
       setShowForm(false);
     }
   };
@@ -129,12 +127,6 @@ export default function GamesPage() {
 
   const handleApproveGame = async (gameId: string) => {
     await approveGame(gameId, 'teacher123'); // Mock teacher ID
-  };
-
-  const clearFilters = () => {
-    setFilters({});
-    setSearchTerm('');
-    setCurrentPage(1);
   };
 
   return (

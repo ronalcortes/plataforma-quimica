@@ -35,12 +35,17 @@ export const useGames = (userId?: string) => {
   };
 
   // Crear nuevo juego
-  const createGame = async (gameData: GameFormData, userId: string) => {
+  const createGame = async (
+    gameData: GameFormData,
+    userId: string,
+    createdByEmail?: string
+  ) => {
     const iframeUrl = convertToIframeUrl(gameData.educaplayUrl);
 
     const newGame: Omit<EducaplayGame, 'id'> = {
       ...gameData,
       userId,
+      createdByEmail,
       iframeUrl,
       description: `Juego de ${gameData.gameType} - ${gameData.title}`,
       subject: 'Química',

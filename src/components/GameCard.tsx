@@ -154,6 +154,7 @@ export const GameCard: React.FC<GameCardProps> = ({
 
           <div className='text-xs text-gray-500'>
             <div>Creado: {formatDate(game.createdAt)}</div>
+            {game.createdByEmail && <div>Por: {game.createdByEmail}</div>}
             {game.updatedAt && game.updatedAt !== game.createdAt && (
               <div>Actualizado: {formatDate(game.updatedAt)}</div>
             )}

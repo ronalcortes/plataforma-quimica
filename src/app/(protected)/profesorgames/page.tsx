@@ -13,7 +13,7 @@ import {
   EyeIcon,
   ClockIcon,
   UserIcon,
-  CalendarIcon,
+  PlayIcon,
 } from '@heroicons/react/24/outline';
 import {
   CheckCircleIcon,
@@ -73,7 +73,10 @@ export default function ProfesorGamesPage() {
 
     const matchesUserSearch =
       !userSearchTerm ||
-      game.userId.toLowerCase().includes(userSearchTerm.toLowerCase());
+      (game.createdByEmail &&
+        game.createdByEmail
+          .toLowerCase()
+          .includes(userSearchTerm.toLowerCase()));
 
     const matchesSubject = !filters.subject || game.subject === filters.subject;
     const matchesDifficulty =
@@ -111,15 +114,6 @@ export default function ProfesorGamesPage() {
     }
     // Recargar juegos después de la acción
     loadGames(undefined, filters);
-  };
-
-  const formatDate = (date: Date | undefined) => {
-    if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
   };
 
   const getStatusBadge = (game: EducaplayGame) => {
@@ -285,9 +279,6 @@ export default function ProfesorGamesPage() {
                       Estado
                     </th>
                     <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                      Fecha
-                    </th>
-                    <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
                       Acciones
                     </th>
                   </tr>
@@ -313,7 +304,7 @@ export default function ProfesorGamesPage() {
                         <div className='flex items-center'>
                           <UserIcon className='w-4 h-4 text-gray-400 mr-2' />
                           <span className='text-sm text-gray-900'>
-                            {game.userId}
+                            {game.createdByEmail || 'N/A'}
                           </span>
                         </div>
                       </td>
@@ -325,14 +316,19 @@ export default function ProfesorGamesPage() {
                       <td className='px-6 py-4 whitespace-nowrap'>
                         {getStatusBadge(game)}
                       </td>
-                      <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                        <div className='flex items-center'>
-                          <CalendarIcon className='w-4 h-4 mr-1' />
-                          {formatDate(game.createdAt)}
-                        </div>
-                      </td>
                       <td className='px-6 py-4 whitespace-nowrap text-sm font-medium'>
                         <div className='flex items-center space-x-2'>
+                          {/* Jugar */}
+                          <button
+                            onClick={() =>
+                              window.open(game.iframeUrl, '_blank')
+                            }
+                            className='text-purple-600 hover:text-purple-900 p-1 rounded-full hover:bg-purple-50'
+                            title='Jugar'
+                          >
+                            <PlayIcon className='w-4 h-4' />
+                          </button>
+
                           {/* Ver juego */}
                           <button
                             onClick={() => setSelectedGame(game)}
@@ -397,7 +393,7 @@ export default function ProfesorGamesPage() {
                   {selectedGame.title}
                 </h3>
                 <p className='text-sm text-gray-500 mt-1'>
-                  Creado por: {selectedGame.userId}
+                  Creado por: {selectedGame.createdByEmail || 'N/A'}
                 </p>
               </div>
               <button

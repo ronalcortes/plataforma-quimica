@@ -1,6 +1,7 @@
 export interface EducaplayGame {
   id?: string;
   userId: string;
+  createdByEmail?: string;
   title: string;
   description?: string;
   educaplayUrl: string;
